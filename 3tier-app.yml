@@ -17,13 +17,8 @@
   hosts: all
   gather_facts: false # remove later! speeds up testing
   become: true
-
-  tasks:
-  - name: enable repos
-    template:
-      src: ./open_three-tier-app.repo
-      dest: /etc/yum.repos.d/open_three-tier-app.repo
-      mode: 0644
+  roles:
+    - { role: "./roles/common" }
 
 - name: deploy haproxy
   hosts: frontends
@@ -40,30 +35,29 @@
     - { role: "./roles/tomcat" }
 
 
-- name: index.html on app 1
-  hosts: app1
-  gather_facts: false
-  become: true
+#- name: index.html on app 1
+#  hosts: app1.{{ GUID }}.internal
+#  gather_facts: false
+#  become: true
 
-  tasks:
-  - name: copy static index.html to tomcat webapps/ansible/index.html
-    template:
-      src: index.html.app1
-      dest: /usr/share/tomcat/webapps/ansible/index.html
+#  tasks:
+#  - name: copy static index.html to tomcat webapps/ansible/index.html
+#    template:
+#      src: index.html.app1
+#      dest: /usr/share/tomcat/webapps/ansible/index.html
 
-- name: index.html on app 2
-  hosts: app2
-  gather_facts: false
-  become: true
+#- name: index.html on app 2
+#  hosts: app2.{{ GUID }}.internal
+#  gather_facts: false
+#  become: true
 
-  tasks:
-  - name: copy static index.html to tomcat webapps/ansible/index.html
-    template:
-      src: index.html.app2
-      dest: /usr/share/tomcat/webapps/ansible/index.html
+#  tasks:
+#  - name: copy static index.html to tomcat webapps/ansible/index.html
+#    template:
+#      src: index.html.app2
+#      dest: /usr/share/tomcat/webapps/ansible/index.html
 
 - name: deploy postgres
-  hosts: apps
   gather_facts: false
   become: true
   hosts: appdbs
@@ -72,10 +66,23 @@
 
 
 - name: deploy apache
-  hosts: apps
   gather_facts: false
   become: true
   hosts: apps
   roles:
     - { role: "./roles/apache" }
 
+
+- name: Smoke Test
+  hosts: 127.0.0.1
+  connection: local
+
+  tasks:
+  - name: check for proper response 
+    uri:
+      url: http://frontend1.{{ GUID }}.example.opentlc.com
+      return_content: yes
+    register: result
+    until: '"Ansible has done its job" in result.content'
+    retries: 10
+    delay: 1

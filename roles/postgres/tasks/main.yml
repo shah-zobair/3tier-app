@@ -10,13 +10,14 @@
   service:
     name: postgresql
     enabled: yes
-- name: check for existing postgres data directory
-  stat: path=/var/lib/pgsql
-  register: postgres_data
+
+#- name: check for existing postgres data directory
+#  stat: path=/var/lib/pgsql
+#  register: postgres_data
 
 - name: initilize postgres
-  command: postgresql-setup initdb
-  when: not postgres_data.stat.exists
+  command: postgresql-setup initdb creates=/var/lib/pgsql
+#  when: not postgres_data.stat.exists
 
 - name: start postgres
   service:
